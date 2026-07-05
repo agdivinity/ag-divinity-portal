@@ -98,13 +98,13 @@
       </div>
     </div>
 
-    <!-- MAIN GATED PARTNER/ADMIN WORKSPACE DESIGN LAYOUT -->
+    <!-- MAIN DASHBOARD SYSTEM VIEW -->
     <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-8">
       
-      <!-- DYNAMIC NAVIGATION FRAME INTERFACE BASED ON SESSION ACCESS CAPABILITIES -->
+      <!-- NAVIGATION PANEL TERMINAL LINKS -->
       <aside class="space-y-2 lg:col-span-1">
         <div class="glass rounded-2xl p-4 space-y-1">
-          <!-- PARTNER CONTROLS (STREAMER / AGENT) -->
+          <!-- PARTNER DASHBOARD OPTION LINKS (STREAMER / AGENT) -->
           <template v-if="user.role === 'Streamer' || user.role === 'Agent'">
             <button @click="panel = 'dashboard'" :class="panel === 'dashboard' ? 'bg-gray-800 text-white font-bold' : 'text-gray-400'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition">📊 System Overview</button>
             <button @click="panel = 'payout'" :class="panel === 'payout' ? 'bg-gray-800 text-white font-bold' : 'text-gray-400'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition">💳 Settlement Terminal</button>
@@ -121,7 +121,7 @@
       <!-- PANELS FRAME ROUTER ENGINE CONTENT MODULES -->
       <main class="lg:col-span-3 space-y-6">
         
-        <!-- FRAME A: STANDARD PARTNER VIEW -->
+        <!-- MODULE: PARTNER DASHBOARD OVERVIEW -->
         <div v-if="panel === 'dashboard'" class="space-y-6">
           <div class="glass rounded-3xl p-6 bg-gradient-to-br from-gray-900/40 to-gray-950/20">
             <h2 class="text-2xl font-black mb-1">Authorized Profile Node: {{ user.name }}</h2>
@@ -167,7 +167,7 @@
           </div>
         </div>
 
-        <!-- FRAME B: STANDARD SETTLEMENT TERMINAL -->
+        <!-- MODULE: SETTLEMENT TERMINAL -->
         <div v-if="panel === 'payout'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="glass rounded-2xl p-6 space-y-4">
             <h3 class="text-base font-bold">Route Target Parameters</h3>
@@ -198,7 +198,7 @@
           </div>
         </div>
 
-        <!-- FRAME C: ADMIN PARTNER APPROVAL MANAGEMENTS CONTROLS -->
+        <!-- MODULE: MANAGEMENT PARTNER USER CONTROL GRID -->
         <div v-if="panel === 'admin_users'" class="glass rounded-2xl p-6 space-y-4">
           <h2 class="text-lg font-bold">Master Account Verification System</h2>
           <div class="overflow-x-auto">
@@ -228,7 +228,6 @@
                   </td>
                   <td class="py-2.5 text-right space-x-1">
                     <button v-if="u.status !== 'Approved'" @click="updateUserStatus(u.id, 'Approved')" class="bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold px-2 py-1 rounded text-[10px]">Approve</button>
-                    <!-- SUPERADMIN SECURITY TRUNCATE LOCK INHERITANCE GATES -->
                     <button v-if="user.role === 'SuperAdmin' && u.status === 'Approved'" @click="updateUserStatus(u.id, 'Suspended')" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-2 py-1 rounded text-[10px]">Suspend</button>
                   </td>
                 </tr>
@@ -237,7 +236,7 @@
           </div>
         </div>
 
-        <!-- FRAME D: ADMIN / FINANCIAL EXECUTIVE OPERATIONS PAYOUT SETTLEMENT QUEUES -->
+        <!-- MODULE: MANAGEMENT PAYOUT APPROVAL TABLE -->
         <div v-if="panel === 'admin_payouts'" class="glass rounded-2xl p-6 space-y-4">
           <h2 class="text-lg font-bold">Liquid Cashout Request Matrix Queue</h2>
           <div class="overflow-x-auto">
@@ -282,8 +281,10 @@
   </div>
 
   <script>
-    // DEFINE YOUR SECURED APPS SCRIPT API GATEWAY PATH WEB APP LINK HERE VERBATIM
-    const GATEWAY_API = "https://script.google.com/macros/s/AKfycbxgwtJhXS18gO8-jNylZlBDpa8b4-nZ9aVffuChflEafwR7UHRMJePx-_l5fqFDuPwH/exec";
+    // ==========================================
+    // PASTE YOUR GOOGLE DEPLOYED WEB APP URL HERE
+    // ==========================================
+    const GATEWAY_API = "YOUR_DEPLOYED_APP_SCRIPT_URL_HERE";
 
     new Vue({
       el: '#app',
@@ -298,16 +299,22 @@
       },
       methods: {
         async login() {
-          if(!this.loginEmail || !this.loginPass) return alert("All access criteria fields are mandatory.");
+          if(!this.loginEmail || !this.loginPass) return alert("Validation entry inputs are required.");
+          
           try {
-            let res = await fetch(GATEWAY_API, { method: 'POST', body: JSON.stringify({ action: 'secureLogin', email: this.loginEmail, password: this.loginPass }) });
+            let res = await fetch(GATEWAY_API, { 
+              method: 'POST', 
+              body: JSON.stringify({ action: 'secureLogin', email: this.loginEmail, password: this.loginPass }) 
+            });
             let data = await res.json();
             
-            if(data.status === "SUCCESS") {
+            // HARD-GATED SECURITY CONTROL LAYER
+            if (data && data.status === "SUCCESS") {
               this.user = data.user;
               this.walletAddress = data.user.wallet || '';
               this.walletNetwork = data.user.network || 'BEP20';
               
+              // ROUTE SWITCH HUB
               if(this.user.role === 'Admin' || this.user.role === 'FinAdmin' || this.user.role === 'SuperAdmin') {
                 this.panel = 'admin_users';
                 await this.loadAdminData();
@@ -316,10 +323,12 @@
                 await this.loadDashboard();
               }
             } else {
-              alert(data.message);
+              this.user = null;
+              alert(data.message || "Access Denied: Record unmatched.");
             }
           } catch(e) {
-            alert("Security Handshake Aborted: Ensure gateway deployment strings match.");
+            this.user = null;
+            alert("Security Handshake Aborted. Verify that your API Gateway deployment URL string is valid and set to 'Anyone'.");
           }
         },
         async loadDashboard() {
@@ -330,7 +339,7 @@
               this.campaigns = data.campaigns;
               this.calculateMetrics();
             }
-          } catch(e) { alert("Failed to trace campaign matrix metrics vectors from endpoint nodes."); }
+          } catch(e) { alert("Failed to fetch campaign matrix metrics vectors."); }
         },
         calculateMetrics() {
           let esc = 0, av = 0, pd = 0;
@@ -342,33 +351,32 @@
             let res = await fetch(GATEWAY_API, { method: 'POST', body: JSON.stringify({ action: 'register', ...this.regForm }) });
             let data = await res.json();
             alert(data.message);
-          } catch(e) { alert("Registration error: Endpoint refused validation."); }
+          } catch(e) { alert("Registration network error."); }
         },
         async publicVerify() {
-          if(!this.verifyQuery) return alert("Search parameter handle needed.");
+          if(!this.verifyQuery) return alert("Search handle parameter required.");
           try {
             let res = await fetch(GATEWAY_API, { method: 'POST', body: JSON.stringify({ action: 'publicVerify', query: this.verifyQuery }) });
             this.verifyResult = await res.json();
-          } catch(e) { this.verifyResult = { status: "NOT_FOUND", message: "Lookup handshake failed." }; }
+          } catch(e) { this.verifyResult = { status: "NOT_FOUND", message: "Lookup connection timeout." }; }
         },
         async saveWallet() {
-          if(!this.walletAddress) return alert("Destination block string key can't be null.");
+          if(!this.walletAddress) return alert("Destination block parameter cannot be empty.");
           try {
             let res = await fetch(GATEWAY_API, { method: 'POST', body: JSON.stringify({ action: 'updateWallet', userId: this.user.id, wallet: this.walletAddress, network: this.walletNetwork }) });
             let data = await res.json();
             alert(data.message);
-          } catch(e) { alert("Error pushing profile layout update records."); }
+          } catch(e) { alert("Error altering database ledger updates."); }
         },
         async triggerPayout() {
-          if(!this.payoutCampaignId) return alert("Campaign targeting index assignment missing.");
+          if(!this.payoutCampaignId) return alert("No campaign targeting index assigned.");
           try {
             let res = await fetch(GATEWAY_API, { method: 'POST', body: JSON.stringify({ action: 'requestPayout', userId: this.user.id, role: this.user.role, campaignId: this.payoutCampaignId, wallet: this.walletAddress, network: this.walletNetwork }) });
             let data = await res.json();
             alert(data.message);
             await this.loadDashboard();
-          } catch(e) { alert("Internal transaction settlement routing exception."); }
+          } catch(e) { alert("Internal system settlement timeout."); }
         },
-        // EXCLUSIVE MANAGEMENT METHODS FOR ADMIN TIER NODES
         async loadAdminData() {
           try {
             let res = await fetch(GATEWAY_API, { method: 'POST', body: JSON.stringify({ action: 'adminGetDashboard' }) });
@@ -377,7 +385,7 @@
               this.adminData.users = data.users;
               this.adminData.payouts = data.payouts;
             }
-          } catch(e) { alert("Error pooling operational records."); }
+          } catch(e) { alert("Error tracking operational dataset lists."); }
         },
         async updateUserStatus(targetId, newStatus) {
           try {
@@ -385,17 +393,17 @@
             let data = await res.json();
             alert(data.message);
             await this.loadAdminData();
-          } catch(e) { alert("Status execution failure."); }
+          } catch(e) { alert("Management execution adjustment error."); }
         },
         async settlePayout(requestId) {
           let proof = prompt("Enter Blockchain Tx Hash Link or Settlement Proof URL:");
-          if(!proof) return alert("Proof string tracking references are required to balance ledgers.");
+          if(!proof) return alert("Proof data parameter context is mandatory.");
           try {
             let res = await fetch(GATEWAY_API, { method: 'POST', body: JSON.stringify({ action: 'adminSettlePayout', requestId: requestId, proofLink: proof }) });
             let data = await res.json();
             alert(data.message);
             await this.loadAdminData();
-          } catch(e) { alert("Settlement processing mapping error."); }
+          } catch(e) { alert("Settlement ledger mapping error."); }
         },
         logout() { this.user = null; this.panel = 'dashboard'; this.loginEmail = ''; this.loginPass = ''; this.campaigns = []; }
       }

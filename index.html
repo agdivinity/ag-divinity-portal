@@ -1,40 +1,399 @@
-// Example login function on your frontend website
-async function handleLogin(emailInput, passwordInput) {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AG Divinity Core Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    body { background: radial-gradient(circle at center, #111827 0%, #030712 100%); }
+  </style>
+</head>
+<body class="text-gray-100 font-sans min-h-screen">
+  <div id="app" class="p-4 md:p-8 max-w-7xl mx-auto">
     
-    // 1. Make sure your URL points to your new deployment
-    const GATEWAY_API = "https://script.google.com/macros/s/AKfycbyR-uSWB99BUSVHKCydrGx6Pa5ft6QfvY-QCxhx8XF8SLOiYuPoyThh6RBk46qlYgSa/exec";
-    
-    // 2. Add a Cache-Buster timestamp so the browser never uses old history
-    const cleanUrl = GATEWAY_API + "?cb=" + new Date().getTime();
+    <header class="flex justify-between items-center mb-12 pb-6 border-b border-gray-800">
+      <div>
+        <h1 class="text-3xl font-extrabold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">AG DIVINITY</h1>
+        <p class="text-xs text-gray-400 tracking-widest uppercase mt-0.5">Unified Matrix Terminal</p>
+      </div>
+      <div v-if="user" class="text-right flex items-center gap-3">
+        <span class="text-xs bg-amber-500/20 text-amber-400 font-bold px-3 py-1 rounded-full border border-amber-500/30">{{ user.role }}</span>
+        <button @click="logout" class="text-sm font-semibold text-gray-400 hover:text-white transition">Sign Out</button>
+      </div>
+    </header>
 
-    // 3. Prepare parameters exactly matching what the new script expects
-    const urlParams = new URLSearchParams();
-    urlParams.append("action", "secureLogin");
-    urlParams.append("email", emailInput);
-    urlParams.append("password", passwordInput);
+    <div v-if="!user" class="max-w-xl mx-auto space-y-8">
+      <div class="flex rounded-xl bg-gray-900/60 p-1 border border-gray-800">
+        <button @click="tab = 'login'" :class="tab === 'login' ? 'bg-amber-500 text-gray-900 font-bold' : 'text-gray-400'" class="flex-1 py-2 text-sm rounded-lg font-semibold transition">Sign In</button>
+        <button @click="tab = 'register'" :class="tab === 'register' ? 'bg-amber-500 text-gray-900 font-bold' : 'text-gray-400'" class="flex-1 py-2 text-sm rounded-lg font-semibold transition">Register</button>
+        <button @click="tab = 'verify'" :class="tab === 'verify' ? 'bg-amber-500 text-gray-900 font-bold' : 'text-gray-400'" class="flex-1 py-2 text-sm rounded-lg font-semibold transition">Trust Lookup</button>
+      </div>
 
-    try {
-        // 4. Send the request using standard URL encoding
-        const response = await fetch(cleanUrl, {
-            method: "POST",
-            mode: "cors", // Forces the browser to allow cross-origin traffic
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: urlParams.toString()
-        });
+      <div v-if="tab === 'login'" class="glass rounded-2xl p-6 shadow-2xl space-y-4">
+        <h2 class="text-xl font-bold">Secure Access Entrance</h2>
+        <div>
+          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Email Coordinates</label>
+          <input type="email" v-model="loginEmail" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Access Passphrase</label>
+          <input type="password" v-model="loginPass" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-amber-500">
+        </div>
+        <button @click="login" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-gray-950 font-bold py-3 rounded-lg hover:brightness-110 transition shadow-lg">Request Session Authorization</button>
+      </div>
 
-        const result = await response.json();
+      <div v-if="tab === 'register'" class="glass rounded-2xl p-6 shadow-2xl space-y-4">
+        <h2 class="text-xl font-bold">Workspace Sign Up</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Full Display Name</label>
+            <input type="text" v-model="regForm.name" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Workspace Role</label>
+            <select v-model="regForm.role" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none">
+              <option value="Streamer">Partner Streamer</option>
+              <option value="Agent">Partner Agent / Agency</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Operating Region</label>
+          <select v-model="regForm.country" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none">
+            <option v-for="c in countries" :value="c">{{ c }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Email Coordinates</label>
+          <input type="email" v-model="regForm.email" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white">
+        </div>
+        <div v-if="regForm.role === 'Streamer'">
+          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Channel Distribution Link</label>
+          <input type="text" v-model="regForm.channelLink" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white" placeholder="https://...">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Telegram Referrer Verification Handle</label>
+          <input type="text" v-model="regForm.telegramReferrer" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white" placeholder="@handle">
+        </div>
+        <button @click="register" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-gray-950 font-bold py-3 rounded-lg hover:brightness-110 transition">Submit Request Data</button>
+      </div>
+
+      <div v-if="tab === 'verify'" class="glass rounded-2xl p-6 shadow-2xl space-y-4">
+        <h2 class="text-xl font-bold">Public Verification Engine</h2>
+        <div class="flex gap-2">
+          <input type="text" v-model="verifyQuery" class="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-amber-500" placeholder="Enter Email, Telegram, or Identity Name...">
+          <button @click="publicVerify" class="bg-amber-500 text-gray-950 font-bold px-6 rounded-lg transition">Scan Node</button>
+        </div>
+        <div v-if="verifyResult" :class="verifyResult.status === 'FOUND' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'" class="p-4 rounded-xl border text-sm font-semibold text-center">
+          {{ verifyResult.message }}
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      
+      <aside class="space-y-2 lg:col-span-1">
+        <div class="glass rounded-2xl p-4 space-y-1">
+          <template v-if="user.role === 'Streamer' || user.role === 'Agent'">
+            <button @click="panel = 'dashboard'" :class="panel === 'dashboard' ? 'bg-gray-800 text-white font-bold' : 'text-gray-400'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition">📊 System Overview</button>
+            <button @click="panel = 'payout'" :class="panel === 'payout' ? 'bg-gray-800 text-white font-bold' : 'text-gray-400'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition">💳 Settlement Terminal</button>
+          </template>
+          
+          <template v-if="user.role === 'Admin' || user.role === 'FinAdmin' || user.role === 'SuperAdmin'">
+            <button @click="panel = 'admin_users'; loadAdminData();" :class="panel === 'admin_users' ? 'bg-gray-800 text-white font-bold' : 'text-gray-400'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition">🛡️ Partner Accounts Queue</button>
+            <button @click="panel = 'admin_payouts'; loadAdminData();" :class="panel === 'admin_payouts' ? 'bg-gray-800 text-white font-bold' : 'text-gray-400'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition">💸 Pending Operations Cashout</button>
+          </template>
+        </div>
+      </aside>
+
+      <main class="lg:col-span-3 space-y-6">
         
-        if (result.status === "SUCCESS") {
-            console.log("Logged in!", result.user);
-            // Redirect user or save session data here
-        } else {
-            alert("Login Failed: " + result.message);
-        }
+        <div v-if="panel === 'dashboard'" class="space-y-6">
+          <div class="glass rounded-3xl p-6 bg-gradient-to-br from-gray-900/40 to-gray-950/20">
+            <h2 class="text-2xl font-black mb-1">Authorized Profile Node: {{ user.name }}</h2>
+            <p class="text-xs text-gray-400">Unique Identity Vector Index: <span class="text-amber-400 font-mono">{{ user.id }}</span></p>
+          </div>
 
-    } catch (error) {
-        console.error("Connection Error:", error);
-        alert("Security Handshake Aborted. Verify that your API Gateway URL is valid and set to 'Anyone'.");
-    }
-}
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="glass rounded-2xl p-5 border-l-4 border-gray-600">
+              <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Escrow Allocation Pool</div>
+              <div class="text-2xl font-black">${{ metrics.escrow }}</div>
+            </div>
+            <div class="glass rounded-2xl p-5 border-l-4 border-emerald-500 bg-emerald-950/10">
+              <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">Withdrawable Balance</div>
+              <div class="text-2xl font-black text-emerald-400">${{ metrics.available }}</div>
+            </div>
+            <div class="glass rounded-2xl p-5 border-l-4 border-orange-500 bg-orange-950/10">
+              <div class="text-xs font-bold text-orange-400 uppercase tracking-wider mb-1">Amount Paid by AG DIVINITY</div>
+              <div class="text-2xl font-black text-orange-400">${{ metrics.paid }}</div>
+            </div>
+          </div>
+
+          <div class="glass rounded-2xl p-6">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Assigned Campaign Ledgers</h3>
+            <div v-if="campaigns.length === 0" class="text-center py-6 text-sm text-gray-500">No campaigns mapped to this account profile.</div>
+            <table v-else class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b border-gray-800 text-gray-400 text-xs uppercase tracking-wider">
+                  <th class="pb-2">Campaign Specification</th>
+                  <th class="pb-2">Escrow Locked</th>
+                  <th class="pb-2">Available</th>
+                  <th class="pb-2">Settled Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800/40">
+                <tr v-for="c in campaigns" :key="c.campaignId">
+                  <td class="py-3 font-bold text-white">{{ c.campaignName }}</td>
+                  <td class="py-3 text-gray-400">${{ c.escrow }}</td>
+                  <td class="py-3 text-emerald-400 font-bold">${{ c.available }}</td>
+                  <td class="py-3 text-orange-400">${{ c.paid }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div v-if="panel === 'payout'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="glass rounded-2xl p-6 space-y-4">
+            <h3 class="text-base font-bold">Route Target Parameters</h3>
+            <div>
+              <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Crypto Network Protocol</label>
+              <select v-model="walletNetwork" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none">
+                <option value="BEP20">USDT - Binance Smart Chain (BEP20)</option>
+                <option value="TRC20">USDT - Tron具 Blockchain (TRC20)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Destination Address String</label>
+              <input type="text" v-model="walletAddress" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white font-mono focus:border-amber-500 focus:outline-none">
+            </div>
+            <button @click="saveWallet" class="bg-amber-500 text-gray-950 font-bold px-4 py-2 rounded-lg text-sm hover:brightness-110 transition">Update Payout Coordinates</button>
+          </div>
+
+          <div class="glass rounded-2xl p-6 space-y-4">
+            <h3 class="text-base font-bold">Liquidate Assets Queue</h3>
+            <div>
+              <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Target Campaign Selection Matrix</label>
+              <select v-model="payoutCampaignId" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none">
+                <option value="" disabled selected>-- Select Campaign --</option>
+                <option v-for="c in campaigns" :value="c.campaignId" :disabled="parseFloat(c.available) <= 0">{{ c.campaignName }} (${{ c.available }} Available)</option>
+              </select>
+            </div>
+            <button @click="triggerPayout" :disabled="!payoutCampaignId" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-gray-950 font-bold py-3 rounded-lg hover:brightness-110 transition disabled:from-gray-800 disabled:text-gray-600">Authorize Execution Transfer</button>
+          </div>
+        </div>
+
+        <div v-if="panel === 'admin_users'" class="glass rounded-2xl p-6 space-y-4">
+          <h2 class="text-lg font-bold">Master Account Verification System</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-gray-800 text-gray-400 uppercase">
+                  <th class="pb-2">ID</th>
+                  <th class="pb-2">Name / Coordinates</th>
+                  <th class="pb-2">Assigned Role</th>
+                  <th class="pb-2">Country</th>
+                  <th class="pb-2">Referrer</th>
+                  <th class="pb-2">Current System Status</th>
+                  <th class="pb-2 text-right">Actions Matrix</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800/40">
+                <tr v-for="u in adminData.users" :key="u.id">
+                  <td class="py-2.5 font-mono text-amber-500">{{ u.id }}</td>
+                  <td class="py-2.5 font-bold text-white">{{ u.name }}<br><span class="text-[10px] text-gray-400 font-normal">{{ u.email }}</span></td>
+                  <td class="py-2.5">{{ u.role }}</td>
+                  <td class="py-2.5 text-gray-300">{{ u.country }}</td>
+                  <td class="py-2.5 text-gray-400">{{ u.referrer }}</td>
+                  <td class="py-2.5">
+                    <span :class="u.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                      {{ u.status }}
+                    </span>
+                  </td>
+                  <td class="py-2.5 text-right space-x-1">
+                    <button v-if="u.status !== 'Approved'" @click="updateUserStatus(u.id, 'Approved')" class="bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold px-2 py-1 rounded text-[10px]">Approve</button>
+                    <button v-if="user.role === 'SuperAdmin' && u.status === 'Approved'" @click="updateUserStatus(u.id, 'Suspended')" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-2 py-1 rounded text-[10px]">Suspend</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div v-if="panel === 'admin_payouts'" class="glass rounded-2xl p-6 space-y-4">
+          <h2 class="text-lg font-bold">Liquid Cashout Request Matrix Queue</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-gray-800 text-gray-400 uppercase">
+                  <th class="pb-2">Req ID</th>
+                  <th class="pb-2">Target Profile</th>
+                  <th class="pb-2">Campaign Index</th>
+                  <th class="pb-2">Destination Cryptographic Details</th>
+                  <th class="pb-2">Settlement Pool</th>
+                  <th class="pb-2">State</th>
+                  <th class="pb-2 text-right">Process Executions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800/40">
+                <tr v-for="p in adminData.payouts" :key="p.reqId">
+                  <td class="py-3 font-mono text-amber-500">{{ p.reqId }}</td>
+                  <td class="py-3 font-bold">{{ p.userId }}<br><span class="text-[10px] text-gray-400 font-normal uppercase tracking-wide">Tier: {{ p.role }}</span></td>
+                  <td class="py-3 text-gray-300 font-medium">{{ p.campaignId }}</td>
+                  <td class="py-3 font-mono text-gray-400 text-[10px] select-all max-w-[150px] truncate" :title="p.wallet">
+                    <span class="bg-gray-900 px-1.5 py-0.5 rounded text-white font-bold tracking-wide mr-1">{{ p.network }}</span>{{ p.wallet }}
+                  </td>
+                  <td class="py-3 text-emerald-400 font-bold text-sm">${{ p.amount }}</td>
+                  <td class="py-3">
+                    <span :class="p.status === 'Done' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'" class="px-2 py-0.5 border rounded text-[10px] font-bold">
+                      {{ p.status }}
+                    </span>
+                  </td>
+                  <td class="py-3 text-right">
+                    <button v-if="p.status === 'Pending'" @click="settlePayout(p.reqId)" class="bg-gradient-to-r from-amber-500 to-orange-500 text-gray-950 font-black px-3 py-1.5 rounded text-[10px] hover:brightness-110 shadow">Process Settlement</button>
+                    <a v-else :href="p.proof" target="_blank" class="text-amber-400 underline font-semibold text-[10px] hover:text-amber-300">View Tx Block</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // YOUR EXACT CORSED LINK PLUGGED IN DIRECTLY BY DESIGN
+    const GATEWAY_API = "https://script.google.com/macros/s/AKfycbyR-uSWB99BUSVHKCydrGx6Pa5ft6QfvY-QCxhx8XF8SLOiYuPoyThh6RBk46qlYgSa/exec";
+
+    new Vue({
+      el: '#app',
+      data: {
+        tab: 'login', panel: 'dashboard', user: null,
+        loginEmail: '', loginPass: '', verifyQuery: '', verifyResult: null,
+        payoutCampaignId: '', walletAddress: '', walletNetwork: 'BEP20',
+        regForm: { name: '', email: '', role: 'Streamer', country: 'India', channelLink: '', telegramReferrer: '' },
+        campaigns: [], metrics: { escrow: 0, available: 0, paid: 0 },
+        adminData: { users: [], payouts: [] },
+        countries: ["Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Belarus","Belgium","Belize","Bhutan","Bolivia","Brazil","Brunei","Bulgaria","Cambodia","Cameroon","Canada","Chile","China","Colombia","Costa Rica","Croatia","Cuba","Cyprus","Czechia","Denmark","Dominican Republic","Ecuador","Egypt","El Salvador","Estonia","Ethiopia","Fiji","Finland","France","Georgia","Germany","Ghana","Greece","Guatemala","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Libya","Lithuania","Luxembourg","Malaysia","Maldives","Malta","Mexico","Moldova","Monaco","Mongolia","Morocco","Myanmar","Nepal","Netherlands","New Zealand","Nicaragua","Nigeria","Norway","Oman","Pakistan","Panama","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Saudi Arabia","Senegal","Serbia","Singapore","Slovakia","Slovenia","South Africa","South Korea","Spain","Sri Lanka","Sudan","Sweden","Switzerland","Syria","Tajikistan","Tanzania","Thailand","Tunisia","Turkey","Turkmenistan","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"]
+      },
+      methods: {
+        // Core data packaging worker mapped to CORS form standards
+        async callBackend(payload) {
+          let formBody = new URLSearchParams();
+          for (let property in payload) {
+            formBody.append(property, payload[property]);
+          }
+          // Appends dynamic timestamp string to force full cache bypasses on modern routers
+          const freshUrl = GATEWAY_API + "?cb=" + new Date().getTime();
+          
+          let response = await fetch(freshUrl, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: formBody
+          });
+          return await response.json();
+        },
+        async login() {
+          if(!this.loginEmail || !this.loginPass) return alert("Validation entry inputs are required.");
+          try {
+            let data = await this.callBackend({ action: 'secureLogin', email: this.loginEmail, password: this.loginPass });
+            
+            if (data && data.status === "SUCCESS") {
+              this.user = data.user;
+              this.walletAddress = data.user.wallet || '';
+              this.walletNetwork = data.user.network || 'BEP20';
+              
+              if(this.user.role === 'Admin' || this.user.role === 'FinAdmin' || this.user.role === 'SuperAdmin') {
+                this.panel = 'admin_users';
+                await this.loadAdminData();
+              } else {
+                this.panel = 'dashboard';
+                await this.loadDashboard();
+              }
+            } else {
+              this.user = null;
+              alert(data.message || "Access Denied: Record mismatch.");
+            }
+          } catch(e) {
+            this.user = null;
+            alert("Security Handshake Aborted. Verify that your API Gateway URL is valid and set to 'Anyone'.");
+          }
+        },
+        async loadDashboard() {
+          try {
+            let data = await this.callBackend({ action: 'getCampaigns', userId: this.user.id, role: this.user.role });
+            if(data.status === "SUCCESS") {
+              this.campaigns = data.campaigns;
+              this.calculateMetrics();
+            }
+          } catch(e) { alert("Failed to fetch dashboard metrics data."); }
+        },
+        calculateMetrics() {
+          let esc = 0, av = 0, pd = 0;
+          this.campaigns.forEach(c => { esc += parseFloat(c.escrow || 0); av += parseFloat(c.available || 0); pd += parseFloat(c.paid || 0); });
+          this.metrics = { escrow: esc.toFixed(2), available: av.toFixed(2), paid: pd.toFixed(2) };
+        },
+        async register() {
+          try {
+            let data = await this.callBackend({ action: 'register', ...this.regForm });
+            alert(data.message);
+          } catch(e) { alert("Registration terminal execution error."); }
+        },
+        async publicVerify() {
+          if(!this.verifyQuery) return alert("Search handle query parameters missing.");
+          try {
+            this.verifyResult = await this.callBackend({ action: 'publicVerify', query: this.verifyQuery });
+          } catch(e) { this.verifyResult = { status: "NOT_FOUND", message: "Lookup handshake connection timeout." }; }
+        },
+        async saveWallet() {
+          if(!this.walletAddress) return alert("Destination address string required.");
+          try {
+            let data = await this.callBackend({ action: 'updateWallet', userId: this.user.id, wallet: this.walletAddress, network: this.walletNetwork });
+            alert(data.message);
+          } catch(e) { alert("Error changing centralized asset tables entries."); }
+        },
+        async triggerPayout() {
+          if(!this.payoutCampaignId) return alert("No operational campaign reference unassigned.");
+          try {
+            let data = await this.callBackend({ action: 'requestPayout', userId: this.user.id, role: this.user.role, campaignId: this.payoutCampaignId, wallet: this.walletAddress, network: this.walletNetwork });
+            alert(data.message);
+            await this.loadDashboard();
+          } catch(e) { alert("Internal network exception on settlement deployment routing."); }
+        },
+        async loadAdminData() {
+          try {
+            let data = await this.callBackend({ action: 'adminGetDashboard' });
+            if(data.status === "SUCCESS") {
+              this.adminData.users = data.users;
+              this.adminData.payouts = data.payouts;
+            }
+          } catch(e) { alert("Operational metrics list retrieval timeout error."); }
+        },
+        async updateUserStatus(targetId, newStatus) {
+          try {
+            let data = await this.callBackend({ action: 'adminUpdateStatus', targetId: targetId, newStatus: newStatus });
+            alert(data.message);
+            await this.loadAdminData();
+          } catch(e) { alert("Management adjustments tracking failed."); }
+        },
+        async settlePayout(requestId) {
+          let proof = prompt("Enter Blockchain Tx Hash Link or Settlement Proof URL:");
+          if(!proof) return alert("Proof parameter text coordinates match required.");
+          try {
+            let data = await this.callBackend({ action: 'adminSettlePayout', requestId: requestId, proofLink: proof });
+            alert(data.message);
+            await this.loadAdminData();
+          } catch(e) { alert("Settlement array execution fault."); }
+        },
+        logout() { this.user = null; this.panel = 'dashboard'; this.loginEmail = ''; this.loginPass = ''; this.campaigns = []; }
+      }
+    });
+  </script>
+</body>
+</html>
